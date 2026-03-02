@@ -46,14 +46,6 @@ const COMPLEXITY_OPTIONS                                              = [
   { value: 'high', label: 'High' },
 ];
 
-const SORT_OPTIONS                                               = [
-  { value: 'name', label: 'Name' },
-  { value: 'complexity', label: 'Complexity' },
-  { value: 'usage', label: 'Usage Count' },
-  { value: 'status', label: 'Status' },
-  { value: 'date', label: 'Date Added' },
-];
-
 const PROGRAM_OPTIONS                                             = [
   { value: 'MIPS_CQM', label: 'MIPS CQM' },
   { value: 'eCQM', label: 'eCQM' },
@@ -253,11 +245,6 @@ export function LibraryBrowser() {
 
   const handleSortByChange = (sortBy                  ) => {
     setFilters({ sortBy, usageSort: undefined }); // Clear legacy usageSort when using new sort
-  };
-
-  const handleSortDirectionToggle = () => {
-    const current = filters.sortDirection ?? 'asc';
-    setFilters({ sortDirection: current === 'asc' ? 'desc' : 'asc' });
   };
 
   const handleProgramToggle = (program                ) => {
@@ -641,34 +628,6 @@ export function LibraryBrowser() {
                 onToggle={handleProgramToggle}
               />
             )}
-
-            {/* Sort By Dropdown */}
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs text-[var(--text-dim)]">Sort:</span>
-              <select
-                value={filters.sortBy ?? 'name'}
-                onChange={(e) => handleSortByChange(e.target.value                    )}
-                className="px-2 py-2 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg text-sm text-[var(--text)] focus:outline-none focus:border-[var(--accent)] transition-colors cursor-pointer"
-              >
-                {SORT_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-              <button
-                type="button"
-                onClick={handleSortDirectionToggle}
-                className="p-2 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg text-[var(--text-muted)] hover:text-[var(--text)] transition-colors"
-                title={filters.sortDirection === 'desc' ? 'Descending' : 'Ascending'}
-              >
-                {filters.sortDirection === 'desc' ? (
-                  <ArrowDown className="w-4 h-4" />
-                ) : (
-                  <ArrowUp className="w-4 h-4" />
-                )}
-              </button>
-            </div>
 
             {/* Result Count */}
             <span className="text-xs text-[var(--text-dim)] ml-auto">
