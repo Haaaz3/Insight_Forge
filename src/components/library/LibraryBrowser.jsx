@@ -63,6 +63,22 @@ const PROGRAM_OPTIONS                                             = [
   { value: 'Custom', label: 'Custom' },
 ];
 
+// Category key to display label mapping
+function getCategoryLabel(key) {
+  const map = {
+    demographics: 'Demographics',
+    encounters: 'Encounters',
+    conditions: 'Conditions',
+    procedures: 'Procedures',
+    medications: 'Medications',
+    assessments: 'Assessments',
+    laboratory: 'Laboratory',
+    'clinical-observations': 'Clinical Obs',
+    exclusions: 'Exclusions',
+  };
+  return map[key] || key;
+}
+
 function getStatusBadge(status                ) {
   switch (status) {
     case 'approved':
@@ -117,6 +133,9 @@ export function LibraryBrowser() {
   } = useComponentLibraryStore();
   const { measures, updateMeasure } = useMeasureStore();
   const { vsacApiKey } = useSettingsStore();
+
+  // Column sort state for list view
+  const [columnSort, setColumnSort] = useState({ col: 'name', dir: 'asc' });
 
   // Bulk VSAC fetch state
   const [bulkFetchLoading, setBulkFetchLoading] = useState(false);
@@ -273,6 +292,56 @@ export function LibraryBrowser() {
       return componentPrograms.some(prog => filters.programs .includes(prog                  ));
     });
   }, [filteredComponents, filters.programs, measures]);
+
+  // Handle column header click for sorting
+  const handleColumnSort = (col) => {
+    if (columnSort.col === col) {
+      // Toggle direction if same column
+      setColumnSort({ col, dir: columnSort.dir === 'asc' ? 'desc' : 'asc' });
+    } else {
+      // New column, default to ascending
+      setColumnSort({ col, dir: 'asc' });
+    }
+    // Sync with the toolbar sort dropdown
+    handleSortByChange(col);
+  };
+
+  // Sort components based on column sort state
+  const sortedComponents = useMemo(() => {
+    const list = [...programFilteredComponents];
+    const { col, dir } = columnSort;
+
+    list.sort((a, b) => {
+      let cmp = 0;
+      switch (col) {
+        case 'name':
+          cmp = a.name.localeCompare(b.name);
+          break;
+        case 'category':
+          cmp = (a.metadata?.category || '').localeCompare(b.metadata?.category || '');
+          break;
+        case 'complexity': {
+          const order = { low: 0, medium: 1, high: 2 };
+          cmp = (order[a.complexity.level] || 0) - (order[b.complexity.level] || 0);
+          break;
+        }
+        case 'usage':
+          cmp = a.usage.usageCount - b.usage.usageCount;
+          break;
+        case 'status':
+          cmp = a.versionInfo.status.localeCompare(b.versionInfo.status);
+          break;
+        case 'date':
+          cmp = (a.metadata?.createdAt || '').localeCompare(b.metadata?.createdAt || '');
+          break;
+        default:
+          break;
+      }
+      return dir === 'asc' ? cmp : -cmp;
+    });
+
+    return list;
+  }, [programFilteredComponents, columnSort]);
 
   const handleNewComponent = () => {
     setEditingComponent('new');
@@ -603,27 +672,117 @@ export function LibraryBrowser() {
 
             {/* Result Count */}
             <span className="text-xs text-[var(--text-dim)] ml-auto">
-              {programFilteredComponents.length} component{programFilteredComponents.length !== 1 ? 's' : ''}
+              {sortedComponents.length} component{sortedComponents.length !== 1 ? 's' : ''}
             </span>
           </div>
 
-          {/* Component Grid + Detail Panel */}
+          {/* Component List + Detail Panel */}
           <div ref={containerRef} className="flex-1 flex overflow-hidden">
-            {/* Cards Grid */}
-            <div className="flex-1 overflow-y-auto p-6">
-              {programFilteredComponents.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {programFilteredComponents.map((component) => (
-                    <ComponentCard
-                      key={component.id}
-                      component={component}
-                      isSelected={selectedComponentId === component.id}
-                      onClick={() => mergeMode ? handleToggleMergeSelect(component.id) : handleCardClick(component.id)}
-                      mergeMode={mergeMode}
-                      isMergeSelected={mergeSelectedIds.includes(component.id)}
-                    />
-                  ))}
-                </div>
+            {/* List Table */}
+            <div className="flex-1 overflow-y-auto">
+              {sortedComponents.length > 0 ? (
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr>
+                      {mergeMode && (
+                        <th className="w-10 px-3 py-2.5 text-left text-[10px] uppercase tracking-wider font-semibold text-[var(--text-dim)] bg-[var(--bg-secondary)] border-b-2 border-[var(--border)] sticky top-0 z-10" />
+                      )}
+                      <th
+                        onClick={() => handleColumnSort('name')}
+                        className={`px-3 py-2.5 text-left text-[10px] uppercase tracking-wider font-semibold cursor-pointer select-none bg-[var(--bg-secondary)] sticky top-0 z-10 ${
+                          columnSort.col === 'name'
+                            ? 'text-[var(--accent)] border-b-2 border-[var(--accent)]'
+                            : 'text-[var(--text-dim)] border-b-2 border-[var(--border)]'
+                        }`}
+                      >
+                        <span className="flex items-center gap-1">
+                          Name
+                          {columnSort.col === 'name' && (
+                            columnSort.dir === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
+                          )}
+                        </span>
+                      </th>
+                      <th className="px-3 py-2.5 text-left text-[10px] uppercase tracking-wider font-semibold text-[var(--text-dim)] bg-[var(--bg-secondary)] border-b-2 border-[var(--border)] sticky top-0 z-10">
+                        Description
+                      </th>
+                      <th
+                        onClick={() => handleColumnSort('category')}
+                        className={`px-3 py-2.5 text-left text-[10px] uppercase tracking-wider font-semibold cursor-pointer select-none bg-[var(--bg-secondary)] sticky top-0 z-10 ${
+                          columnSort.col === 'category'
+                            ? 'text-[var(--accent)] border-b-2 border-[var(--accent)]'
+                            : 'text-[var(--text-dim)] border-b-2 border-[var(--border)]'
+                        }`}
+                      >
+                        <span className="flex items-center gap-1">
+                          Category
+                          {columnSort.col === 'category' && (
+                            columnSort.dir === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
+                          )}
+                        </span>
+                      </th>
+                      <th
+                        onClick={() => handleColumnSort('complexity')}
+                        className={`px-3 py-2.5 text-left text-[10px] uppercase tracking-wider font-semibold cursor-pointer select-none bg-[var(--bg-secondary)] sticky top-0 z-10 ${
+                          columnSort.col === 'complexity'
+                            ? 'text-[var(--accent)] border-b-2 border-[var(--accent)]'
+                            : 'text-[var(--text-dim)] border-b-2 border-[var(--border)]'
+                        }`}
+                      >
+                        <span className="flex items-center gap-1">
+                          Complexity
+                          {columnSort.col === 'complexity' && (
+                            columnSort.dir === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
+                          )}
+                        </span>
+                      </th>
+                      <th
+                        onClick={() => handleColumnSort('usage')}
+                        className={`px-3 py-2.5 text-left text-[10px] uppercase tracking-wider font-semibold cursor-pointer select-none bg-[var(--bg-secondary)] sticky top-0 z-10 ${
+                          columnSort.col === 'usage'
+                            ? 'text-[var(--accent)] border-b-2 border-[var(--accent)]'
+                            : 'text-[var(--text-dim)] border-b-2 border-[var(--border)]'
+                        }`}
+                      >
+                        <span className="flex items-center gap-1">
+                          Used In
+                          {columnSort.col === 'usage' && (
+                            columnSort.dir === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
+                          )}
+                        </span>
+                      </th>
+                      <th className="px-3 py-2.5 text-left text-[10px] uppercase tracking-wider font-semibold text-[var(--text-dim)] bg-[var(--bg-secondary)] border-b-2 border-[var(--border)] sticky top-0 z-10">
+                        Catalog
+                      </th>
+                      <th
+                        onClick={() => handleColumnSort('status')}
+                        className={`px-3 py-2.5 text-left text-[10px] uppercase tracking-wider font-semibold cursor-pointer select-none bg-[var(--bg-secondary)] sticky top-0 z-10 ${
+                          columnSort.col === 'status'
+                            ? 'text-[var(--accent)] border-b-2 border-[var(--accent)]'
+                            : 'text-[var(--text-dim)] border-b-2 border-[var(--border)]'
+                        }`}
+                      >
+                        <span className="flex items-center gap-1">
+                          Status
+                          {columnSort.col === 'status' && (
+                            columnSort.dir === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
+                          )}
+                        </span>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sortedComponents.map((component) => (
+                      <ComponentRow
+                        key={component.id}
+                        component={component}
+                        isSelected={selectedComponentId === component.id}
+                        onClick={() => mergeMode ? handleToggleMergeSelect(component.id) : handleCardClick(component.id)}
+                        mergeMode={mergeMode}
+                        isMergeSelected={mergeSelectedIds.includes(component.id)}
+                      />
+                    ))}
+                  </tbody>
+                </table>
               ) : (
                 <div className="flex flex-col items-center justify-center h-full text-center">
                   <Package className="w-16 h-16 text-[var(--text-dim)] opacity-30 mb-4" />
@@ -755,10 +914,10 @@ export function LibraryBrowser() {
 }
 
 // ---------------------------------------------------------------------------
-// ComponentCard
+// ComponentRow — Table row for list view
 // ---------------------------------------------------------------------------
 
-function ComponentCard({
+function ComponentRow({
   component,
   isSelected,
   onClick,
@@ -770,186 +929,116 @@ function ComponentCard({
   const complexityDots = getComplexityDots(component.complexity.level);
   const isComposite = component.type === 'composite';
   const isArchived = component.versionInfo.status === 'archived';
+  const hasMissingCodes =
+    component.type === 'atomic' &&
+    component.metadata?.category !== 'demographics' &&
+    (!component.valueSet?.codes || component.valueSet.codes.length === 0);
 
-  // When in merge mode, use a flex layout with checkbox in left gutter
-  if (mergeMode) {
-    return (
-      <div
-        onClick={onClick}
-        className="flex gap-2.5 cursor-pointer"
-        style={{ alignItems: 'stretch' }}
-      >
-        {/* LEFT GUTTER — checkbox only, vertically centered */}
-        <div className="flex items-center flex-shrink-0 pt-1">
+  // Row styling based on state
+  let rowClasses = 'cursor-pointer transition-colors border-b border-[var(--border-light)]';
+  if (isArchived) {
+    rowClasses += ' opacity-50 grayscale';
+  } else if (mergeMode && isMergeSelected) {
+    rowClasses += ' bg-purple-500/10 border-l-2 border-l-purple-500';
+  } else if (!mergeMode && isSelected) {
+    rowClasses += ' bg-[var(--accent-light)] border-l-2 border-l-[var(--accent)]';
+  } else {
+    rowClasses += ' hover:bg-[var(--bg-secondary)]';
+  }
+
+  return (
+    <tr onClick={onClick} className={rowClasses}>
+      {/* Checkbox column (merge mode only) */}
+      {mergeMode && (
+        <td className="w-10 px-3 py-3 align-middle">
           <div
             className={`w-5 h-5 rounded flex items-center justify-center transition-all ${
               isMergeSelected
                 ? 'bg-purple-600 border-2 border-purple-600'
-                : 'bg-[var(--bg-primary)] border-2 border-[var(--border)]'
+                : 'bg-[var(--bg)] border-2 border-[var(--border)]'
             }`}
           >
             {isMergeSelected && <Check className="w-3 h-3 text-white" />}
           </div>
-        </div>
+        </td>
+      )}
 
-        {/* TILE — full card, no checkbox inside */}
-        <div
-          className={`flex-1 border rounded-xl p-4 transition-all group ${
-            isArchived
-              ? 'bg-[var(--bg-secondary)] border-[var(--border)] opacity-50 grayscale'
-              : isMergeSelected
-                ? 'bg-purple-500/10 border-purple-500'
-                : 'bg-[var(--bg-elevated,var(--bg))] border-[var(--border)] hover:border-purple-500/40 hover:shadow-md'
-          }`}
-        >
-          {/* Header: Name + Type Badge */}
-          <div className="flex items-start justify-between gap-2 mb-2">
-            <h3 className="text-sm font-semibold text-[var(--text)] truncate group-hover:text-purple-400 transition-colors">
-              {component.name}
-            </h3>
-            {isComposite && (
-              <span className="flex-shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium uppercase tracking-wide bg-purple-500/10 text-purple-400">
-                <GitBranch className="w-3 h-3" />
-                Composite
-              </span>
-            )}
-          </div>
-
-          {/* Description */}
-          <p className="text-xs text-[var(--text-muted)] line-clamp-2 mb-3 min-h-[2rem]">
-            {component.description || 'No description provided'}
-          </p>
-
-          {/* Complexity */}
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-xs text-[var(--text-dim)]">Complexity</span>
-            <span className={`text-sm ${complexityColor}`} title={`Score: ${component.complexity.score}`}>
-              {complexityDots}
-            </span>
-            <span className={`text-xs font-medium capitalize ${complexityColor}`}>
-              {component.complexity.level}
-            </span>
-          </div>
-
-          {/* Due Date */}
-          {component.dueDateDays != null && (
-            <div className="flex items-center gap-1.5 text-xs text-[var(--text-dim)] mb-3">
-              <Clock className="w-3 h-3" />
-              <span>T-{component.dueDateDays}</span>
-              <span className="text-[var(--text-dim)]/60">
-                ({component.dueDateDays === 365 ? 'Annual'
-                  : component.dueDateDays % 365 === 0 ? `${component.dueDateDays / 365}yr`
-                  : `${component.dueDateDays}d`})
-              </span>
-            </div>
-          )}
-
-          {/* Missing codes warning */}
-          {component.type === 'atomic' &&
-            component.metadata?.category !== 'demographics' &&
-            (!component.valueSet?.codes || component.valueSet.codes.length === 0) && (
-            <div className="flex items-center gap-1 text-xs text-amber-400 mb-3">
-              <AlertTriangle className="w-3 h-3" />
-              <span>Missing codes</span>
-            </div>
-          )}
-
-          {/* Footer: Usage + Status */}
-          <div className="flex items-center justify-between pt-3 border-t border-[var(--border)]">
-            <span className="text-xs text-[var(--text-dim)] flex items-center gap-1">
-              <Tag className="w-3 h-3" />
-              Used in {component.usage.usageCount} measure{component.usage.usageCount !== 1 ? 's' : ''}
-            </span>
-            <span
-              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${statusBadge.color}`}
-            >
-              {statusBadge.icon}
-              {statusBadge.label}
-            </span>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Normal mode (non-merge)
-  return (
-    <div
-      onClick={onClick}
-      className={`border rounded-xl p-4 cursor-pointer transition-all group relative ${
-        isArchived
-          ? 'bg-[var(--bg-secondary)] border-[var(--border)] opacity-50 grayscale'
-          : isSelected
-            ? 'bg-[var(--bg-elevated,var(--bg))] border-[var(--accent)] ring-1 ring-[var(--accent)]/30'
-            : 'bg-[var(--bg-elevated,var(--bg))] border-[var(--border)] hover:border-[var(--accent)]/40 hover:shadow-md'
-      }`}
-    >
-      {/* Header: Name + Type Badge */}
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <h3 className="text-sm font-semibold text-[var(--text)] truncate group-hover:text-[var(--accent)] transition-colors">
-          {component.name}
-        </h3>
-        {isComposite && (
-          <span className="flex-shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium uppercase tracking-wide bg-purple-500/10 text-purple-400">
-            <GitBranch className="w-3 h-3" />
-            Composite
+      {/* Name */}
+      <td className="px-3 py-3 align-middle">
+        <div className="flex items-center gap-2">
+          <span className={`text-sm font-semibold truncate ${isSelected && !mergeMode ? 'text-[var(--accent)]' : 'text-[var(--text)]'}`}>
+            {component.name}
           </span>
-        )}
-      </div>
+          {isComposite && (
+            <span className="flex-shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wide bg-purple-500/10 text-purple-500">
+              <GitBranch className="w-3 h-3" />
+              Composite
+            </span>
+          )}
+        </div>
+      </td>
 
       {/* Description */}
-      <p className="text-xs text-[var(--text-muted)] line-clamp-2 mb-3 min-h-[2rem]">
-        {component.description || 'No description provided'}
-      </p>
+      <td className="px-3 py-3 align-middle">
+        <span className="text-xs text-[var(--text-muted)] truncate block max-w-[300px]">
+          {component.description || 'No description'}
+        </span>
+      </td>
+
+      {/* Category */}
+      <td className="px-3 py-3 align-middle">
+        <span className="text-[11px] text-[var(--text-secondary)] bg-[var(--bg-tertiary)] px-2 py-1 rounded whitespace-nowrap">
+          {getCategoryLabel(component.metadata?.category)}
+        </span>
+      </td>
 
       {/* Complexity */}
-      <div className="flex items-center gap-2 mb-3">
-        <span className="text-xs text-[var(--text-dim)]">Complexity</span>
-        <span className={`text-sm ${complexityColor}`} title={`Score: ${component.complexity.score}`}>
-          {complexityDots}
-        </span>
-        <span className={`text-xs font-medium capitalize ${complexityColor}`}>
-          {component.complexity.level}
-        </span>
-      </div>
-
-      {/* Due Date */}
-      {component.dueDateDays != null && (
-        <div className="flex items-center gap-1.5 text-xs text-[var(--text-dim)] mb-3">
-          <Clock className="w-3 h-3" />
-          <span>T-{component.dueDateDays}</span>
-          <span className="text-[var(--text-dim)]/60">
-            ({component.dueDateDays === 365 ? 'Annual'
-              : component.dueDateDays % 365 === 0 ? `${component.dueDateDays / 365}yr`
-              : `${component.dueDateDays}d`})
+      <td className="px-3 py-3 align-middle">
+        <div className="flex items-center gap-1.5">
+          <span className={`text-xs ${complexityColor}`}>{complexityDots}</span>
+          <span className={`text-xs font-medium capitalize ${complexityColor}`}>
+            {component.complexity.level}
           </span>
         </div>
-      )}
+      </td>
 
-      {/* Missing codes warning */}
-      {component.type === 'atomic' &&
-        component.metadata?.category !== 'demographics' &&
-        (!component.valueSet?.codes || component.valueSet.codes.length === 0) && (
-        <div className="flex items-center gap-1 text-xs text-amber-400 mb-3">
-          <AlertTriangle className="w-3 h-3" />
-          <span>Missing codes</span>
+      {/* Used In */}
+      <td className="px-3 py-3 align-middle">
+        <span className={`text-xs ${component.usage.usageCount > 0 ? 'text-[var(--text-secondary)]' : 'text-[var(--text-dim)]'}`}>
+          {component.usage.usageCount}
+        </span>
+      </td>
+
+      {/* Catalog */}
+      <td className="px-3 py-3 align-middle">
+        <div className="flex flex-wrap gap-1">
+          {(component.catalogs || []).map((cat) => (
+            <span
+              key={cat}
+              className="text-[10px] font-medium text-[var(--text-secondary)] bg-[var(--bg-secondary)] border border-[var(--border-light)] px-1.5 py-0.5 rounded whitespace-nowrap"
+            >
+              {cat}
+            </span>
+          ))}
         </div>
-      )}
+      </td>
 
-      {/* Footer: Usage + Status */}
-      <div className="flex items-center justify-between pt-3 border-t border-[var(--border)]">
-        <span className="text-xs text-[var(--text-dim)] flex items-center gap-1">
-          <Tag className="w-3 h-3" />
-          Used in {component.usage.usageCount} measure{component.usage.usageCount !== 1 ? 's' : ''}
-        </span>
-        <span
-          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${statusBadge.color}`}
-        >
-          {statusBadge.icon}
-          {statusBadge.label}
-        </span>
-      </div>
-    </div>
+      {/* Status */}
+      <td className="px-3 py-3 align-middle">
+        <div className="flex flex-col gap-1">
+          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium w-fit ${statusBadge.color}`}>
+            {statusBadge.icon}
+            {statusBadge.label}
+          </span>
+          {hasMissingCodes && (
+            <span className="inline-flex items-center gap-1 text-[10px] text-amber-500">
+              <AlertTriangle className="w-3 h-3" />
+              Missing codes
+            </span>
+          )}
+        </div>
+      </td>
+    </tr>
   );
 }
 
