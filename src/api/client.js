@@ -3,6 +3,8 @@
  */
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+const API_AUTH_USER = import.meta.env.VITE_API_AUTH_USER || '';
+const API_AUTH_PASS = import.meta.env.VITE_API_AUTH_PASS || '';
 
 /**
  * HTTP error with status code and response body.
@@ -38,6 +40,10 @@ async function request(endpoint, options = {}) {
     'Content-Type': 'application/json',
     ...options.headers,
   };
+
+  if (API_AUTH_USER && API_AUTH_PASS) {
+    headers['Authorization'] = 'Basic ' + btoa(API_AUTH_USER + ':' + API_AUTH_PASS);
+  }
 
   let response;
   try {
