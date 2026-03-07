@@ -41,6 +41,15 @@ const CATEGORIES                                                = [
   { value: 'exclusions', label: 'Exclusions' },
 ];
 
+const CATALOGUE_OPTIONS = [
+  { value: 'ecqm',               label: 'eCQM' },
+  { value: 'mips_cqm',           label: 'MIPS CQM' },
+  { value: 'hedis',              label: 'HEDIS' },
+  { value: 'clinical_standard',  label: 'Clinical Standard' },
+  { value: 'qof',                label: 'QOF' },
+  { value: 'custom',             label: 'Custom' },
+];
+
 // ============================================================================
 // Component
 // ============================================================================
@@ -119,6 +128,7 @@ export default function ComponentEditor({ componentId, onSave, onClose }        
   const [tagsInput, setTagsInput] = useState(
     existingComponent?.metadata.tags.join(', ') ?? ''
   );
+  const [catalogs, setCatalogs] = useState(existingComponent?.catalogs ?? []);
 
   // --------------------------------------------------------------------------
   // State: Composite Fields
@@ -236,6 +246,8 @@ export default function ComponentEditor({ componentId, onSave, onClose }        
 
       // Attach codes to the component's valueSet
       (component       ).valueSet.codes = codes;
+      // Attach catalogs
+      component.catalogs = catalogs;
 
       if (isEditMode && existingComponent) {
         const updates = {
@@ -247,6 +259,7 @@ export default function ComponentEditor({ componentId, onSave, onClose }        
           dueDateDays,
           dueDateDaysOverridden: dueDateOverridden,
           ageEvaluatedAt,
+          catalogs,
           metadata: {
             ...existingComponent.metadata,
             category,
@@ -311,6 +324,8 @@ export default function ComponentEditor({ componentId, onSave, onClose }        
         tags,
         resolveChild,
       });
+      // Attach catalogs
+      component.catalogs = catalogs;
 
       if (isEditMode && existingComponent) {
         const updates = {
@@ -318,6 +333,7 @@ export default function ComponentEditor({ componentId, onSave, onClose }        
           operator: component.operator,
           children: component.children,
           complexity: component.complexity,
+          catalogs,
           metadata: {
             ...existingComponent.metadata,
             category,
@@ -347,7 +363,7 @@ export default function ComponentEditor({ componentId, onSave, onClose }        
     timing, buildDisplayExpression, negation, category, dueDateDays, dueDateOverridden,
     ageEvaluatedAt, isEditMode, existingComponent, updateComponent, addComponent, selectedChildIds,
     components, operator, onSave, codes, categoryAutoAssigned, syncComponentToMeasures,
-    measures, batchUpdateMeasures,
+    measures, batchUpdateMeasures, catalogs,
   ]);
 
   const canSave = useMemo(() => {
@@ -922,6 +938,39 @@ export default function ComponentEditor({ componentId, onSave, onClose }        
                 </option>
               ))}
             </select>
+          </div>
+
+          {/* Catalogue Tags */}
+          <div>
+            <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text)' }}>
+              Catalogue Tags
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {CATALOGUE_OPTIONS.map((opt) => {
+                const isActive = catalogs.includes(opt.value);
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => {
+                      setCatalogs((prev) =>
+                        isActive
+                          ? prev.filter((v) => v !== opt.value)
+                          : [...prev, opt.value]
+                      );
+                    }}
+                    className="px-3 py-1.5 rounded-full text-sm font-medium transition-all border"
+                    style={{
+                      backgroundColor: isActive ? 'var(--accent)' : 'transparent',
+                      borderColor: isActive ? 'var(--accent)' : 'var(--border)',
+                      color: isActive ? '#fff' : 'var(--text-secondary)',
+                    }}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* Complexity Preview */}

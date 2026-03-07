@@ -27,7 +27,10 @@ public record UpdateComponentRequest(
 
     // Metadata
     String category,
-    List<String> tags
+    List<String> tags,
+
+    // Catalogue tags
+    List<String> catalogs
 ) {
 
     public record CodeRequest(

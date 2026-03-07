@@ -394,6 +394,11 @@ public class ComponentLibraryService {
                 existing.getMetadata().setTags(updates.getMetadata().getTags());
             }
         }
+
+        // Merge catalogs
+        if (updates.getCatalogs() != null) {
+            existing.setCatalogs(updates.getCatalogs());
+        }
     }
 
     private void calculateAndSetComplexity(LibraryComponent component) {

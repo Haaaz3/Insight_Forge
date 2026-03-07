@@ -28,6 +28,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { useComponentLibraryStore } from '../../stores/componentLibraryStore';
+import { useMeasureStore } from '../../stores/measureStore';
 import { inferCategory, getCategoryLabel } from '../../utils/inferCategory';
 
 // ============================================================================
@@ -188,6 +189,9 @@ export default function AddComponentModal({
   const [showCategoryFilter, setShowCategoryFilter] = useState(true);
 
   const { components } = useComponentLibraryStore();
+  const { measures, activeMeasureId } = useMeasureStore();
+  const activeMeasure = measures.find(m => m.id === activeMeasureId);
+  const measureCatalog = activeMeasure?.metadata?.program?.toLowerCase().replace(' ', '_') || null;
 
   const isReplaceMode = mode === 'replace';
 
@@ -228,7 +232,26 @@ export default function AddComponentModal({
       items = items.filter(c => filterCat.includes(getComponentCategory(c)));
     }
 
+    // Apply catalogue-aware sorting: matching components sort first
+    if (measureCatalog) {
+      items.sort((a, b) => {
+        const aMatch = !a.catalogs?.length || a.catalogs.includes(measureCatalog);
+        const bMatch = !b.catalogs?.length || b.catalogs.includes(measureCatalog);
+        if (aMatch && !bMatch) return -1;
+        if (!aMatch && bMatch) return 1;
+        return 0;
+      });
+    }
+
+    // Apply secondary sort based on sortBy
     items.sort((a, b) => {
+      // First, preserve catalogue match ordering when measureCatalog is set
+      if (measureCatalog) {
+        const aMatch = !a.catalogs?.length || a.catalogs.includes(measureCatalog);
+        const bMatch = !b.catalogs?.length || b.catalogs.includes(measureCatalog);
+        if (aMatch !== bMatch) return aMatch ? -1 : 1;
+      }
+      // Then apply secondary sort
       if (sortBy === 'name') return a.name.localeCompare(b.name);
       if (sortBy === 'category') return (a.category || '').localeCompare(b.category || '') || a.name.localeCompare(b.name);
       if (sortBy === 'codes') return (b.valueSet?.codes?.length || 0) - (a.valueSet?.codes?.length || 0);
@@ -237,7 +260,7 @@ export default function AddComponentModal({
     });
 
     return items;
-  }, [components, search, filterCat, sortBy, getComponentCategory]);
+  }, [components, search, filterCat, sortBy, getComponentCategory, measureCatalog]);
 
   // Group by category (real categories only, not atomic/composite type)
   const grouped = useMemo(() => {
@@ -364,6 +387,8 @@ export default function AddComponentModal({
     const cxDots = cxLevel === 'low' ? 1 : cxLevel === 'medium' ? 2 : 3;
     const cxColor = cxLevel === 'low' ? '#059669' : cxLevel === 'medium' ? '#d97706' : '#dc2626';
     const conf = CONFIDENCE_COLORS[cxLevel] || CONFIDENCE_COLORS.medium;
+    // Show catalogue match indicator: only for components with tags that match the measure
+    const showCatalogMatch = measureCatalog && comp.catalogs?.length > 0 && comp.catalogs.includes(measureCatalog);
 
     return (
       <div
@@ -386,8 +411,11 @@ export default function AddComponentModal({
               >
                 <IconComponent size={12} style={{ color: cc.text }} />
               </div>
-              <div className="text-sm font-bold truncate" style={{ color: 'var(--text)' }}>
+              <div className="text-sm font-bold truncate flex items-center gap-1.5" style={{ color: 'var(--text)' }}>
                 {comp.name}
+                {showCatalogMatch && (
+                  <span style={{ color: 'var(--accent)', fontSize: '8px', lineHeight: 1 }}>●</span>
+                )}
               </div>
             </div>
             <span

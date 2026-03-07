@@ -23,7 +23,10 @@ public record CreateCompositeComponentRequest(
 
     // Metadata
     String category,
-    List<String> tags
+    List<String> tags,
+
+    // Catalogue tags
+    List<String> catalogs
 ) {
 
     public record ComponentReferenceRequest(

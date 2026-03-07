@@ -48,6 +48,13 @@ public abstract class LibraryComponent extends AuditableEntity {
     private ComponentMetadata metadata;
 
     /**
+     * JSON array of catalogue tags (e.g., ["ecqm", "hedis"]).
+     * Components with matching catalogues are prioritized when adding to measures.
+     */
+    @Column(name = "catalogs", columnDefinition = "TEXT")
+    private String catalogs;
+
+    /**
      * Get the discriminator value for this component type.
      */
     public abstract String getType();

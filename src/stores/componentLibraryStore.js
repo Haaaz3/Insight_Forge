@@ -359,6 +359,7 @@ export const useComponentLibraryStore = create                       ()(
                 timing: component.timing,
                 negation: component.negation || false,
                 category: component.metadata?.category || 'uncategorized',
+                catalogs: component.catalogs || [],
               });
             } else if (syncInfo.operation === 'update' && component?.type === 'atomic') {
               const { updateComponent: updateComponentApi } = await import('../api/components');
@@ -374,6 +375,7 @@ export const useComponentLibraryStore = create                       ()(
                 })),
                 timing: component.timing,
                 category: component.metadata?.category,
+                catalogs: component.catalogs || [],
               });
             } else if (syncInfo.operation === 'delete') {
               const { deleteComponent: deleteComponentApi } = await import('../api/components');
@@ -555,6 +557,7 @@ export const useComponentLibraryStore = create                       ()(
               genderValue: atomicComp.genderValue || undefined,
               category: atomicComp.metadata?.category || 'uncategorized',
               tags: atomicComp.metadata?.tags || undefined,
+              catalogs: atomicComp.catalogs || [],
             });
             console.log(`Component ${component.id} persisted to backend`);
             // Clear any pending sync status on success
@@ -659,6 +662,7 @@ export const useComponentLibraryStore = create                       ()(
               negation: atomicComp.negation || false,
               category: atomicComp.metadata?.category || 'uncategorized',
               tags: atomicComp.metadata?.tags || undefined,
+              catalogs: atomicComp.catalogs || [],
             };
             try {
               await updateComponentApi(id, requestBody);
@@ -1168,6 +1172,7 @@ export const useComponentLibraryStore = create                       ()(
                     genderValue: atomicComp.genderValue || undefined,
                     category: atomicComp.metadata?.category || 'uncategorized',
                     tags: atomicComp.metadata?.tags || undefined,
+                    catalogs: atomicComp.catalogs || [],
                   };
                   console.log('[linkMeasureComponents] POSTing component to backend:', requestBody);
                   try {

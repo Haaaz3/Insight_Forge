@@ -38,6 +38,9 @@ public record ComponentDto(
     // Metadata
     MetadataDto metadata,
 
+    // Catalogue tags
+    List<String> catalogs,
+
     // Audit
     LocalDateTime createdAt,
     String createdBy,

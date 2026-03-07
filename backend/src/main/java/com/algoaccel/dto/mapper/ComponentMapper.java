@@ -71,6 +71,9 @@ public class ComponentMapper {
             // Metadata
             toMetadataDto(entity.getMetadata()),
 
+            // Catalogs
+            parseStringList(entity.getCatalogs()),
+
             // Audit
             entity.getCreatedAt(),
             entity.getCreatedBy(),
@@ -173,6 +176,9 @@ public class ComponentMapper {
         }
         entity.setMetadata(metadata);
 
+        // Catalogs
+        entity.setCatalogs(serializeTags(request.catalogs()));
+
         return entity;
     }
 
@@ -199,6 +205,9 @@ public class ComponentMapper {
             metadata.setCategoryAutoAssigned(false);
         }
         entity.setMetadata(metadata);
+
+        // Catalogs
+        entity.setCatalogs(serializeTags(request.catalogs()));
 
         return entity;
     }
@@ -272,6 +281,11 @@ public class ComponentMapper {
                 entity.setMetadata(new ComponentMetadata());
             }
             entity.getMetadata().setTags(serializeTags(request.tags()));
+        }
+
+        // Catalogs updates
+        if (request.catalogs() != null) {
+            entity.setCatalogs(serializeTags(request.catalogs()));
         }
 
         // Note: category updates are handled by the service layer for re-inference logic
