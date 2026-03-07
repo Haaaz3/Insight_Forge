@@ -166,6 +166,11 @@ function transformDataElement(dto                )              {
       comparator: mapComparator(dto.thresholds.comparator),
       unit: dto.thresholds.unit || undefined,
     } : undefined,
+    // HEDIS-specific fields (only present for HEDIS measures on applicable element types)
+    hedis: dto.hedis ? {
+      collectionType: dto.hedis.collectionType || null,
+      hybridSourceFlag: dto.hedis.hybridSourceFlag || false,
+    } : undefined,
   };
 }
 

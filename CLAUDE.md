@@ -137,6 +137,14 @@ npm run build       # Output to dist/
 
 **Design decision:** `catalogueDefaults` stores suggested defaults (e.g., `{"hedis": {"collectionType": "administrative", "hybridSourceFlag": false}}`). The actual HEDIS fields live on data elements within the measure's UMS, not on the library component.
 
+**Task 2 Complete: hedis block on data elements**
+- `extractionService.js` - Added `isHedisApplicableType()` helper and hedis block population in `convertCriteria()`
+- `transformers.js` - Added hedis block preservation in `transformDataElement()`
+- `measureStore.js` - Updated both `importMeasure` and `addMeasure` to populate hedis block from component's catalogueDefaults when linking
+
+**HEDIS-applicable element types:** encounter, procedure, laboratory, medication, condition (diagnosis)
+**hedis block structure:** `{ collectionType: "administrative"|"hybrid"|"ecd"|"ecds"|null, hybridSourceFlag: boolean }`
+
 ### Feature 1b: Catalogue Auto-Detection (March 2026)
 - `src/utils/catalogueClassifier.js` - Signal-based document classifier
 - `src/components/ingestion/CatalogueConfirmationChip.jsx` - Confirmation UI

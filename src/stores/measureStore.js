@@ -327,7 +327,11 @@ export const useMeasureStore = create              ()(
           );
 
           // Update the measure's data elements with their libraryComponentIds
+          // Also populate hedis block from catalogueDefaults for HEDIS measures
           if (Object.keys(linkMap).length > 0) {
+            const isHedisMeasure = fhirMeasure.metadata?.program === 'HEDIS';
+            const hedisApplicableTypes = ['encounter', 'procedure', 'laboratory', 'medication', 'diagnosis', 'condition'];
+
             const updateElementLinks = (node     )      => {
               if (!node) return node;
               if ('operator' in node && 'children' in node) {
@@ -338,7 +342,28 @@ export const useMeasureStore = create              ()(
               }
               // It's a DataElement - update libraryComponentId if we have a link
               if (linkMap[node.id] && linkMap[node.id] !== '__ZERO_CODES__') {
-                return { ...node, libraryComponentId: linkMap[node.id] };
+                const linkedComponentId = linkMap[node.id];
+                let updatedNode = { ...node, libraryComponentId: linkedComponentId };
+
+                // For HEDIS measures, populate hedis block from component's catalogueDefaults
+                if (isHedisMeasure && hedisApplicableTypes.includes(node.type?.toLowerCase())) {
+                  const linkedComponent = componentStore.components[linkedComponentId];
+                  const catalogueDefaults = linkedComponent?.catalogueDefaults;
+                  const hedisDefaults = catalogueDefaults?.hedis;
+
+                  // Only set hedis block if element doesn't already have one or has null values
+                  if (!updatedNode.hedis || updatedNode.hedis.collectionType === null) {
+                    updatedNode = {
+                      ...updatedNode,
+                      hedis: {
+                        collectionType: hedisDefaults?.collectionType || updatedNode.hedis?.collectionType || null,
+                        hybridSourceFlag: hedisDefaults?.hybridSourceFlag ?? updatedNode.hedis?.hybridSourceFlag ?? false,
+                      },
+                    };
+                  }
+                }
+
+                return updatedNode;
               }
               return node;
             };
@@ -448,7 +473,11 @@ export const useMeasureStore = create              ()(
           );
 
           // Update the measure's data elements with their libraryComponentIds
+          // Also populate hedis block from catalogueDefaults for HEDIS measures
           if (Object.keys(linkMap).length > 0) {
+            const isHedisMeasure = fhirMeasure.metadata?.program === 'HEDIS';
+            const hedisApplicableTypes = ['encounter', 'procedure', 'laboratory', 'medication', 'diagnosis', 'condition'];
+
             const updateElementLinks = (node     )      => {
               if (!node) return node;
               if ('operator' in node && 'children' in node) {
@@ -459,7 +488,28 @@ export const useMeasureStore = create              ()(
               }
               // It's a DataElement - update libraryComponentId if we have a link
               if (linkMap[node.id] && linkMap[node.id] !== '__ZERO_CODES__') {
-                return { ...node, libraryComponentId: linkMap[node.id] };
+                const linkedComponentId = linkMap[node.id];
+                let updatedNode = { ...node, libraryComponentId: linkedComponentId };
+
+                // For HEDIS measures, populate hedis block from component's catalogueDefaults
+                if (isHedisMeasure && hedisApplicableTypes.includes(node.type?.toLowerCase())) {
+                  const linkedComponent = componentStore.components[linkedComponentId];
+                  const catalogueDefaults = linkedComponent?.catalogueDefaults;
+                  const hedisDefaults = catalogueDefaults?.hedis;
+
+                  // Only set hedis block if element doesn't already have one or has null values
+                  if (!updatedNode.hedis || updatedNode.hedis.collectionType === null) {
+                    updatedNode = {
+                      ...updatedNode,
+                      hedis: {
+                        collectionType: hedisDefaults?.collectionType || updatedNode.hedis?.collectionType || null,
+                        hybridSourceFlag: hedisDefaults?.hybridSourceFlag ?? updatedNode.hedis?.hybridSourceFlag ?? false,
+                      },
+                    };
+                  }
+                }
+
+                return updatedNode;
               }
               return node;
             };

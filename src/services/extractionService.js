@@ -581,11 +581,23 @@ function parseJsonResponse(content        )                 {
 }
 
 /**
+ * Determine if a data element type should have HEDIS fields.
+ * HEDIS fields apply to: encounter, procedure, laboratory, medication, condition (diagnosis)
+ */
+function isHedisApplicableType(type        )          {
+  const hedisTypes = ['encounter', 'procedure', 'laboratory', 'medication', 'diagnosis', 'condition'];
+  return hedisTypes.includes(type?.toLowerCase() || '');
+}
+
+/**
  * Convert extracted data to UMS format for the frontend.
  */
 function convertToUMS(extractedData               )                       {
   const now = new Date().toISOString();
   const metadata = extractedData.metadata || {};
+
+  // Check if this is a HEDIS measure
+  const isHedisMeasure = mapProgram(metadata.program) === 'HEDIS';
 
   // Helper for unique IDs - prevents duplicate entity errors in backend
   const uniqueId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -598,7 +610,7 @@ function convertToUMS(extractedData               )                       {
 
   // Build populations array
   const populations                         = (extractedData.populations || []).map((pop, idx) => {
-    const criteria = convertCriteria(pop.criteria);
+    const criteria = convertCriteria(pop.criteria, isHedisMeasure);
     console.log(`[convertToUMS] Converted pop ${idx}: type=${pop.type}, criteriaChildren=${criteria.children?.length || 0}`);
     return {
       id: `pop-${uniqueId()}`,
@@ -694,9 +706,11 @@ function convertToUMS(extractedData               )                       {
 
 /**
  * Convert extracted criteria to UMS LogicalClause format.
+ * @param criteria - The extracted criteria from LLM
+ * @param isHedisMeasure - Whether this is a HEDIS measure (adds hedis block to applicable elements)
  */
 let convertCriteriaDepth = 0;
-function convertCriteria(criteria                    )                {
+function convertCriteria(criteria                    , isHedisMeasure          = false)                {
   convertCriteriaDepth++;
   console.log('[convertCriteria] ENTER depth=' + convertCriteriaDepth);
 
@@ -730,7 +744,7 @@ function convertCriteria(criteria                    )                {
     clause.children = criteria.children.map((child, _idx) => {
       // Check if it's a nested clause (has operator property)
       if ('operator' in child) {
-        return convertCriteria(child                     );
+        return convertCriteria(child                     , isHedisMeasure);
       }
 
       // Data element - use unique IDs to avoid duplicates across populations
@@ -771,6 +785,15 @@ function convertCriteria(criteria                    )                {
           display: c.display || '',
           system: c.system || '',
         }));
+      }
+
+      // Add HEDIS block for applicable data element types when measure is HEDIS-tagged
+      // Types: encounter, procedure, laboratory, medication, condition (diagnosis)
+      if (isHedisMeasure && isHedisApplicableType(dataElement.type)) {
+        dataElement.hedis = {
+          collectionType: criterion.collectionType || null,
+          hybridSourceFlag: criterion.hybridSourceFlag || false,
+        };
       }
 
       return dataElement;
