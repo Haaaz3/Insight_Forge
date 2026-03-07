@@ -359,6 +359,18 @@ async function extractSkeleton(
 // ============================================================================
 
 function getPopulationDetailPrompt(skeleton                 , popSkeleton                    )         {
+  // Add HEDIS-specific instructions when this is a HEDIS measure
+  const isHedisMeasure = skeleton.programType?.toLowerCase() === 'hedis';
+  const hedisInstructions = isHedisMeasure ? `
+5. For HEDIS measures: Infer the collection type for each data element from the specification.
+   Use only these values:
+   - "administrative" — data sourced from claims only (default)
+   - "hybrid" — combination of claims and medical record review
+   - "ecd" — Electronic Clinical Data (EHR/lab feeds)
+   - "ecds" — Electronic Clinical Data Systems
+   Set hybridSourceFlag: true only if this element is specifically identified as a medical record review element.
+` : '';
+
   return `You are extracting DETAILED criteria for the ${popSkeleton.type} population of measure ${skeleton.measureId}.
 
 Context:
@@ -371,7 +383,7 @@ Extract ALL criteria for this specific population. For each criterion:
 1. Identify the clinical data type (diagnosis, procedure, medication, observation, encounter, demographic, immunization)
 2. Extract the EXACT value set OID if present (format: 2.16.840.1.113883.x.x.x)
 3. Extract timing requirements precisely
-4. Note any negation (absence of condition, no procedure, etc.)
+4. Note any negation (absence of condition, no procedure, etc.)${hedisInstructions}
 
 Return JSON:
 {
@@ -394,7 +406,9 @@ Return JSON:
           "confidence": "high"
         }],
         "negation": false,
-        "confidence": "high"
+        "confidence": "high"${isHedisMeasure ? `,
+        "collectionType": "administrative",
+        "hybridSourceFlag": false` : ''}
       }
     ],
     "confidence": "high"

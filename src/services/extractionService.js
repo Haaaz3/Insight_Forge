@@ -283,7 +283,36 @@ export async function extractMeasure(
     const catalogueType = skeleton.metadata?.program?.toLowerCase() || 'unknown';
     const feedbackStore = useFeedbackStore.getState();
     const feedbackGuidance = feedbackStore.generateExtractionGuidance(catalogueType);
-    const enhancedSystemPrompt = EXTRACTION_SYSTEM_PROMPT + feedbackGuidance;
+
+    // Add HEDIS-specific instructions when confirmed as HEDIS measure
+    const hedisGuidance = catalogueType === 'hedis' ? `
+
+HEDIS-SPECIFIC INSTRUCTIONS:
+For each data element in the populations (encounters, procedures, laboratory, medications, conditions),
+infer the HEDIS collection type from the measure specification. Use only these values:
+  - "administrative" — data sourced from claims only
+  - "hybrid" — combination of claims and medical record review
+  - "ecd" — Electronic Clinical Data (EHR/lab feeds)
+  - "ecds" — Electronic Clinical Data Systems
+
+If the spec explicitly states the collection method, use it.
+If the spec implies claims-based sourcing, use "administrative".
+If uncertain, default to "administrative".
+
+Also return hybridSourceFlag: true if this element is specifically identified
+as a medical record review element in a hybrid measure, otherwise false.
+
+Include collectionType and hybridSourceFlag on each applicable data element's JSON object:
+{
+  "dataType": "Encounter",
+  "description": "...",
+  "valueSet": {...},
+  "collectionType": "administrative",
+  "hybridSourceFlag": false
+}
+` : '';
+
+    const enhancedSystemPrompt = EXTRACTION_SYSTEM_PROMPT + feedbackGuidance + hedisGuidance;
 
     const fullResult = await callLlmExtract({
       systemPrompt: enhancedSystemPrompt,
@@ -412,7 +441,27 @@ export async function extractMeasureMultiPass(
     const catalogueType = skeleton.metadata?.program?.toLowerCase() || 'unknown';
     const feedbackStore = useFeedbackStore.getState();
     const feedbackGuidance = feedbackStore.generateExtractionGuidance(catalogueType);
-    const enhancedPopulationPrompt = POPULATION_DETAIL_PROMPT + feedbackGuidance;
+
+    // Add HEDIS-specific instructions when confirmed as HEDIS measure
+    const hedisGuidance = catalogueType === 'hedis' ? `
+
+HEDIS-SPECIFIC INSTRUCTIONS:
+For each data element (encounters, procedures, laboratory, medications, conditions),
+infer the HEDIS collection type from the measure specification. Use only these values:
+  - "administrative" — data sourced from claims only
+  - "hybrid" — combination of claims and medical record review
+  - "ecd" — Electronic Clinical Data (EHR/lab feeds)
+  - "ecds" — Electronic Clinical Data Systems
+
+Include collectionType and hybridSourceFlag on each data element:
+{
+  "dataType": "Encounter",
+  "collectionType": "administrative",
+  "hybridSourceFlag": false
+}
+` : '';
+
+    const enhancedPopulationPrompt = POPULATION_DETAIL_PROMPT + feedbackGuidance + hedisGuidance;
 
     // Phase 2: Extract each population in detail
     const populations = [];

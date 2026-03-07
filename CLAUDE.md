@@ -145,6 +145,15 @@ npm run build       # Output to dist/
 **HEDIS-applicable element types:** encounter, procedure, laboratory, medication, condition (diagnosis)
 **hedis block structure:** `{ collectionType: "administrative"|"hybrid"|"ecd"|"ecds"|null, hybridSourceFlag: boolean }`
 
+**Task 3 Complete: AI infers collection type at HEDIS ingest**
+- `extractionService.js` - Added HEDIS-specific LLM prompt instructions for collectionType/hybridSourceFlag inference
+- `multiPassExtractor.js` - Added HEDIS guidance and JSON schema extension in `getPopulationDetailPrompt()`
+
+**LLM guidance:** When catalogue is HEDIS, the prompt instructs the AI to:
+- Infer collectionType from spec (administrative, hybrid, ecd, ecds)
+- Default to "administrative" if uncertain
+- Set hybridSourceFlag=true only for medical record review elements
+
 ### Feature 1b: Catalogue Auto-Detection (March 2026)
 - `src/utils/catalogueClassifier.js` - Signal-based document classifier
 - `src/components/ingestion/CatalogueConfirmationChip.jsx` - Confirmation UI
