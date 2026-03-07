@@ -17,20 +17,8 @@ import {
   Code,
   ExternalLink,
   Code2,
-  FolderOpen,
-  Plus,
 } from 'lucide-react';
 
-// Program/Catalogue options (matches MEASURE_PROGRAMS in UMSEditor.jsx)
-const PROGRAM_OPTIONS = [
-  { value: 'MIPS_CQM', label: 'MIPS CQM' },
-  { value: 'eCQM', label: 'eCQM' },
-  { value: 'HEDIS', label: 'HEDIS' },
-  { value: 'QOF', label: 'QOF' },
-  { value: 'Registry', label: 'Registry' },
-  { value: 'Custom', label: 'Custom' },
-];
-const PROGRAM_LABEL_MAP = Object.fromEntries(PROGRAM_OPTIONS.map(p => [p.value, p.label]));
 // Note: setActiveTab was removed as it was unused - setActiveMeasure handles tab switching internally
 import { useComponentLibraryStore } from '../../stores/componentLibraryStore';
 import { useMeasureStore } from '../../stores/measureStore';
@@ -179,13 +167,12 @@ function LibraryCodeViewer({ component }                        ) {
 // ============================================================================
 
 export function ComponentDetail({ componentId, onClose, onEdit }                      ) {
-  const { getComponent, approve, archiveComponentVersion, addComponent, updateComponent } =
+  const { getComponent, approve, archiveComponentVersion, addComponent } =
     useComponentLibraryStore();
   const { measures, setActiveMeasure } = useMeasureStore();
 
   const [versionHistoryOpen, setVersionHistoryOpen] = useState(false);
   const [archiveConfirmOpen, setArchiveConfirmOpen] = useState(false);
-  const [addCatalogValue, setAddCatalogValue] = useState('');
 
   const component = getComponent(componentId);
 
@@ -200,49 +187,6 @@ export function ComponentDetail({ componentId, onClose, onEdit }                
     }
     return lookup;
   }, [measures]);
-
-  // Compute derived catalogs from measure usage
-  const derivedCatalogs = useMemo(() => {
-    if (!component) return [];
-    const programs = component.usage.measureIds
-      .map(id => measureLookup.get(id)?.metadata?.program)
-      .filter(Boolean);
-    return [...new Set(programs.map(p => PROGRAM_LABEL_MAP[p] || p))];
-  }, [component, measureLookup]);
-
-  // Manual catalogs (from component.catalogs) excluding those already derived
-  const manualCatalogs = useMemo(() => {
-    if (!component) return [];
-    return (component.catalogs || [])
-      .map(p => PROGRAM_LABEL_MAP[p] || p)
-      .filter(label => !derivedCatalogs.includes(label));
-  }, [component, derivedCatalogs]);
-
-  // Available catalogs to add (not already derived or manually assigned)
-  const availableCatalogsToAdd = useMemo(() => {
-    if (!component) return [];
-    const currentManual = component.catalogs || [];
-    return PROGRAM_OPTIONS.filter(
-      p => !derivedCatalogs.includes(p.label) && !currentManual.includes(p.value)
-    );
-  }, [component, derivedCatalogs]);
-
-  // Add a manual catalog
-  const handleAddCatalog = useCallback(() => {
-    if (!addCatalogValue || !component) return;
-    const existing = component.catalogs || [];
-    if (!existing.includes(addCatalogValue)) {
-      updateComponent(componentId, { catalogs: [...existing, addCatalogValue] });
-    }
-    setAddCatalogValue('');
-  }, [addCatalogValue, component, componentId, updateComponent]);
-
-  // Remove a manual catalog
-  const handleRemoveCatalog = useCallback((programValue) => {
-    if (!component) return;
-    const existing = component.catalogs || [];
-    updateComponent(componentId, { catalogs: existing.filter(c => c !== programValue) });
-  }, [component, componentId, updateComponent]);
 
   // Helper to find a DataElement in the criteria tree that links to a library component
   const findElementByLibraryComponentId = (
@@ -528,95 +472,6 @@ export function ComponentDetail({ componentId, onClose, onEdit }                
                 );
               })}
             </ul>
-          )}
-        </div>
-
-        {/* -------------------------------------------------------------- */}
-        {/* Catalogs                                                      */}
-        {/* -------------------------------------------------------------- */}
-        <div className="rounded-lg border border-[var(--border)] bg-[var(--bg)] px-4 py-3">
-          <div className="flex items-center gap-2 mb-3">
-            <FolderOpen size={14} className="text-[var(--text-muted)]" />
-            <span className="text-sm font-medium text-[var(--text)]">Catalogs</span>
-          </div>
-
-          {/* Derived catalogs (from measures) */}
-          {derivedCatalogs.length > 0 && (
-            <div className="mb-3">
-              <span className="text-[10px] text-[var(--text-dim)] uppercase tracking-wide block mb-1.5">Via linked measures</span>
-              <div className="flex flex-wrap gap-1.5">
-                {derivedCatalogs.map(cat => (
-                  <span
-                    key={cat}
-                    className="inline-flex items-center px-2 py-0.5 text-[11px] rounded bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-light)]"
-                    title="Derived from measure usage"
-                  >
-                    {cat}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Manual catalogs (editable) */}
-          {manualCatalogs.length > 0 && (
-            <div className="mb-3">
-              <span className="text-[10px] text-[var(--text-dim)] uppercase tracking-wide block mb-1.5">Manually assigned</span>
-              <div className="flex flex-wrap gap-1.5">
-                {manualCatalogs.map(cat => {
-                  const prog = PROGRAM_OPTIONS.find(p => p.label === cat);
-                  return (
-                    <span
-                      key={cat}
-                      className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] rounded bg-[var(--accent-light)] text-[var(--accent)] border border-[var(--accent)]/30"
-                    >
-                      {cat}
-                      {prog && (
-                        <button
-                          onClick={() => handleRemoveCatalog(prog.value)}
-                          className="ml-0.5 hover:text-red-500 transition-colors"
-                          title="Remove catalog"
-                        >
-                          ×
-                        </button>
-                      )}
-                    </span>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Empty state */}
-          {derivedCatalogs.length === 0 && manualCatalogs.length === 0 && (
-            <p className="text-xs text-[var(--text-dim)] italic mb-3">No catalogs assigned</p>
-          )}
-
-          {/* Add catalog */}
-          {availableCatalogsToAdd.length > 0 && (
-            <div className="pt-2 border-t border-[var(--border)] flex items-center gap-2">
-              <select
-                value={addCatalogValue}
-                onChange={(e) => setAddCatalogValue(e.target.value)}
-                className="flex-1 px-2 py-1.5 text-xs rounded border border-[var(--border)] bg-[var(--bg)] text-[var(--text)] focus:outline-none focus:border-[var(--accent)]"
-              >
-                <option value="">Add catalog...</option>
-                {availableCatalogsToAdd.map(p => (
-                  <option key={p.value} value={p.value}>{p.label}</option>
-                ))}
-              </select>
-              <button
-                onClick={handleAddCatalog}
-                disabled={!addCatalogValue}
-                className={`px-3 py-1.5 text-xs font-medium rounded ${
-                  addCatalogValue
-                    ? 'bg-[var(--accent)] text-white hover:opacity-90'
-                    : 'bg-[var(--bg-tertiary)] text-[var(--text-dim)] cursor-not-allowed'
-                } transition-opacity`}
-              >
-                <Plus size={12} className="inline -mt-0.5" /> Add
-              </button>
-            </div>
           )}
         </div>
 
