@@ -154,6 +154,12 @@ npm run build       # Output to dist/
 - Default to "administrative" if uncertain
 - Set hybridSourceFlag=true only for medical record review elements
 
+**Task 4 Complete: HEDIS fields in UMS editor**
+- `UMSEditor.jsx` - Added HEDIS Collection section to `NodeDetailPanel` with:
+  - Collection Type dropdown (administrative, hybrid, ecd, ecds)
+  - Hybrid Source Flag checkbox
+  - Only visible for HEDIS measures on applicable element types
+
 ### Feature 1b: Catalogue Auto-Detection (March 2026)
 - `src/utils/catalogueClassifier.js` - Signal-based document classifier
 - `src/components/ingestion/CatalogueConfirmationChip.jsx` - Confirmation UI

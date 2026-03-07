@@ -3918,6 +3918,74 @@ function NodeDetailPanel({
           />
         </div>
 
+        {/* HEDIS-specific fields (only show for HEDIS measures on applicable element types) */}
+        {(() => {
+          const isHedisMeasure = currentMeasure?.metadata?.program === 'HEDIS';
+          const hedisApplicableTypes = ['encounter', 'procedure', 'laboratory', 'medication', 'diagnosis', 'condition'];
+          const isApplicableType = hedisApplicableTypes.includes(node.type?.toLowerCase());
+
+          if (!isHedisMeasure || !isApplicableType) return null;
+
+          return (
+            <div className="p-3 bg-[var(--bg-tertiary)] rounded-lg border border-[var(--border)]">
+              <h4 className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                <Database className="w-3.5 h-3.5" />
+                HEDIS Collection
+              </h4>
+
+              {/* Collection Type */}
+              <div className="mb-3">
+                <label className="block text-[10px] font-medium text-[var(--text-dim)] uppercase mb-1.5">
+                  Collection Type
+                </label>
+                <select
+                  value={node.hedis?.collectionType || ''}
+                  onChange={(e) => {
+                    const newHedis = {
+                      ...(node.hedis || {}),
+                      collectionType: e.target.value || null,
+                    };
+                    updateDataElement(measureId, node.id, { hedis: newHedis });
+                  }}
+                  className="w-full px-2 py-1.5 bg-[var(--bg-secondary)] border border-[var(--border)] rounded text-xs text-[var(--text)] focus:outline-none focus:border-[var(--accent)]/50"
+                >
+                  <option value="">Not specified</option>
+                  <option value="administrative">Administrative (claims only)</option>
+                  <option value="hybrid">Hybrid (claims + medical record)</option>
+                  <option value="ecd">ECD (Electronic Clinical Data)</option>
+                  <option value="ecds">ECDS (Electronic Clinical Data Systems)</option>
+                </select>
+              </div>
+
+              {/* Hybrid Source Flag */}
+              <label className="flex items-center gap-2 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={node.hedis?.hybridSourceFlag || false}
+                  onChange={(e) => {
+                    const newHedis = {
+                      ...(node.hedis || {}),
+                      hybridSourceFlag: e.target.checked,
+                    };
+                    updateDataElement(measureId, node.id, { hedis: newHedis });
+                  }}
+                  className="w-4 h-4 rounded border-[var(--border)] bg-[var(--bg-secondary)] text-[var(--accent)] focus:ring-[var(--accent)]/50 focus:ring-offset-0"
+                />
+                <span className="text-xs text-[var(--text-muted)] group-hover:text-[var(--text)]">
+                  Medical Record Review Element
+                </span>
+              </label>
+
+              {/* Info text */}
+              {!node.hedis?.collectionType && (
+                <p className="mt-2 text-[10px] text-[var(--text-dim)] italic">
+                  Set collection type to specify how this data element is sourced for HEDIS reporting.
+                </p>
+              )}
+            </div>
+          );
+        })()}
+
         {/* Editable Additional Requirements */}
         {(node.additionalRequirements && node.additionalRequirements.length > 0) && (
           <div className="p-3 bg-[var(--bg-tertiary)] rounded-lg border border-[var(--border)]">
