@@ -257,6 +257,98 @@ export const sampleAtomics                                        = [
     },
   },
 
+  // Patient Sex: Female (Generic) - Simple variant for HEDIS/MIPS/QOF measures
+  {
+    type: 'atomic',
+    id: 'patient-sex-female-generic',
+    name: 'Patient Sex: Female (Simple)',
+    description: 'Patient sex: Female. Simple demographic constraint for non-FHIR measures.',
+    // Sex/Gender component detection fields
+    resourceType: 'Patient',
+    genderValue: 'female',
+    valueSet: null,
+    // Sex is immutable - no timing constraint
+    timing: null,
+    negation: false,
+    dueDateDays: null,
+    dueDateDaysOverridden: false,
+    catalogues: ['HEDIS', 'MIPS', 'eCQM', 'QOF'],
+    versionInfo: {
+      versionId: '1.0',
+      versionHistory: [
+        {
+          versionId: '1.0',
+          status: 'approved',
+          createdAt: '2024-01-15T10:00:00Z',
+          createdBy: 'system',
+          changeDescription: 'Initial version - Generic patient sex component',
+        },
+      ],
+      status: 'approved',
+      approvedBy: 'admin',
+      approvedAt: '2024-01-15T10:00:00Z',
+    },
+    usage: {
+      measureIds: [],
+      usageCount: 0,
+    },
+    metadata: {
+      createdAt: '2024-01-15T10:00:00Z',
+      createdBy: 'system',
+      updatedAt: '2024-01-15T10:00:00Z',
+      updatedBy: 'system',
+      category: 'demographics',
+      tags: ['sex', 'gender', 'female', 'demographic', 'patient', 'simple'],
+      source: { origin: 'ecqi' },
+    },
+  },
+
+  // Patient Sex: Male (Generic) - Simple variant for HEDIS/MIPS/QOF measures
+  {
+    type: 'atomic',
+    id: 'patient-sex-male-generic',
+    name: 'Patient Sex: Male (Simple)',
+    description: 'Patient sex: Male. Simple demographic constraint for non-FHIR measures.',
+    // Sex/Gender component detection fields
+    resourceType: 'Patient',
+    genderValue: 'male',
+    valueSet: null,
+    // Sex is immutable - no timing constraint
+    timing: null,
+    negation: false,
+    dueDateDays: null,
+    dueDateDaysOverridden: false,
+    catalogues: ['HEDIS', 'MIPS', 'eCQM', 'QOF'],
+    versionInfo: {
+      versionId: '1.0',
+      versionHistory: [
+        {
+          versionId: '1.0',
+          status: 'approved',
+          createdAt: '2024-01-15T10:00:00Z',
+          createdBy: 'system',
+          changeDescription: 'Initial version - Generic patient sex component',
+        },
+      ],
+      status: 'approved',
+      approvedBy: 'admin',
+      approvedAt: '2024-01-15T10:00:00Z',
+    },
+    usage: {
+      measureIds: [],
+      usageCount: 0,
+    },
+    metadata: {
+      createdAt: '2024-01-15T10:00:00Z',
+      createdBy: 'system',
+      updatedAt: '2024-01-15T10:00:00Z',
+      updatedBy: 'system',
+      category: 'demographics',
+      tags: ['sex', 'gender', 'male', 'demographic', 'patient', 'simple'],
+      source: { origin: 'ecqi' },
+    },
+  },
+
   // Encounters - Low complexity
   {
     type: 'atomic',
@@ -808,7 +900,7 @@ export const sampleCategories                  = [
   {
     category: 'demographics',
     displayName: 'Demographics',
-    componentIds: ['comp-demographic-age-requirement', 'patient-sex-female', 'patient-sex-male'],
+    componentIds: ['comp-demographic-age-requirement', 'patient-sex-female', 'patient-sex-male', 'patient-sex-female-generic', 'patient-sex-male-generic'],
     sortOrder: 1,
   },
   {
