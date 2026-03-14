@@ -120,7 +120,7 @@ function AppContent() {
                     Unable to Connect to Backend
                   </h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                    {errorMessage || 'The backend server is not responding. Please ensure the backend is running on port 8080.'}
+                    {errorMessage || 'The backend server is not responding. Please ensure the backend is running on port 8000.'}
                   </p>
                   <div className="flex gap-3">
                     <button

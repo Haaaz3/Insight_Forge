@@ -16,10 +16,11 @@ npm install
 npm run dev
 # Runs at http://localhost:5173
 
-# Backend (Spring Boot)
-cd backend
-./mvnw spring-boot:run
-# Runs at http://localhost:8080
+# Backend (FastAPI)
+cd insight_forge_api
+source venv/bin/activate
+uvicorn app.main:app --host 0.0.0.0 --port 8000
+# Runs at http://localhost:8000
 ```
 
 ## Technology Stack
@@ -27,7 +28,7 @@ cd backend
 | Layer | Technology |
 |-------|------------|
 | Frontend | React 18, TypeScript, Vite 7, Tailwind CSS 4, Zustand 5 |
-| Backend | Spring Boot 3.2, Java 17, H2 (dev) / PostgreSQL (prod) |
+| Backend | FastAPI, Python 3.9+, SQLAlchemy 2.0 async, SQLite (dev) / Oracle (prod) |
 | AI Providers | Anthropic Claude, OpenAI GPT, Google Gemini |
 | Deployment | Frontend: Vercel, Backend: Railway |
 
